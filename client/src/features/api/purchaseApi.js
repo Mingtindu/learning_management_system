@@ -12,7 +12,7 @@ export const purchaseApi = createApi({
   endpoints: (builder) => ({
     createCheckoutSession: builder.mutation({
       query: (courseId) => ({
-        url: "/checkout/create-checkout-session",
+        url: "/esewa",
         method: "POST",
         body: { courseId },
       }),

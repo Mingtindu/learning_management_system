@@ -47,6 +47,12 @@ export const courseApi = createApi({
         method: "GET",
       }),
     }),
+    getRecommendedCourse: builder.query({
+      query: () => ({
+        url: "/recommendations",
+        method: "GET",
+      }),
+    }),
     getCreatorCourse: builder.query({
       query: () => ({
         url: "",
@@ -129,4 +135,5 @@ export const {
   useRemoveLectureMutation,
   useGetLectureByIdQuery,
   usePublishCourseMutation,
+  useGetRecommendedCourseQuery,
 } = courseApi;

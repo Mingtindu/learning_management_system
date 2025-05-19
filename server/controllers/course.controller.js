@@ -1,6 +1,7 @@
  
 import { Course } from "../models/course.model.js";
 import { Lecture } from "../models/lecture.model.js";
+import { User } from "../models/user.model.js";
 import {deleteMediaFromCloudinary, deleteVideoFromCloudinary, uploadMedia} from "../utils/cloudinary.js";
 
 export const createCourse = async (req,res) => {
@@ -337,3 +338,34 @@ export const togglePublishCourse = async (req,res) => {
         })
     }
 }
+
+export const getRecommendedCourses = async (req, res) => {
+    try {
+      const userId = req.id;
+  
+      // 1️⃣ Get the user's enrolled courses
+      const user = await User.findById(userId).populate('enrolledCourses');
+      if (!user) return res.status(404).json({ message: "User not found" });
+  
+      const enrolledCourses = user.enrolledCourses;
+  
+      if (enrolledCourses.length === 0) {
+        return res.json({ message: "No enrolled courses yet, recommend popular ones" });
+      }
+  
+      // 2️⃣ Get all unique categories from enrolled courses
+      const categories = [...new Set(enrolledCourses.map(c => c.category))];
+  
+      // 3️⃣ Find other courses in those categories, exclude already enrolled
+      const recommendedCourses = await Course.find({
+        category: { $in: categories },
+        _id: { $nin: user.enrolledCourses }
+      }).sort({ enrolledStudents: -1 }) // optional: sort by popularity
+        .limit(5); // limit to top 5
+  
+      res.json({ recommendedCourses });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
+  };

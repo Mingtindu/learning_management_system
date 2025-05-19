@@ -1,4 +1,5 @@
 // McgPr7oX7v1mMcbN
+import { BASE_URL } from "@/app/constant";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -37,6 +38,7 @@ const Login = () => {
       isSuccess: registerIsSuccess,
     },
   ] = useRegisterUserMutation();
+
   const [
     loginUser,
     {
@@ -62,19 +64,22 @@ const Login = () => {
     const action = type === "signup" ? registerUser : loginUser;
     await action(inputData);
   };
+  const handleGoogleLogin = async () => {
+    window.location.href = `${BASE_URL}/api/v1/user/google`;
+  };
 
   useEffect(() => {
-    if(registerIsSuccess && registerData){
-      toast.success(registerData?.message || "Signup successful.")
+    if (registerIsSuccess && registerData) {
+      toast.success(registerData?.message || "Signup successful.");
     }
-    if(registerError){
+    if (registerError) {
       toast.error(registerError?.data?.message || "Signup Failed");
     }
-    if(loginIsSuccess && loginData){
+    if (loginIsSuccess && loginData) {
       toast.success(loginData?.message || "Login successful.");
       navigate("/");
     }
-    if(loginError){ 
+    if (loginError) {
       toast.error(loginError?.data?.message || "login Failed");
     }
   }, [
@@ -169,7 +174,7 @@ const Login = () => {
                   name="email"
                   value={loginInput.email}
                   onChange={(e) => changeInputHandler(e, "login")}
-                  placeholder="Eg. patel@gmail.com"
+                  placeholder="Eg. mingtindu@gmail.com"
                   required="true"
                 />
               </div>
@@ -197,6 +202,19 @@ const Login = () => {
                   </>
                 ) : (
                   "Login"
+                )}
+              </Button>
+              <Button
+                disabled={loginIsLoading}
+                onClick={() => handleGoogleLogin("login")}
+              >
+                {loginIsLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please
+                    wait
+                  </>
+                ) : (
+                  "Login with google"
                 )}
               </Button>
             </CardFooter>
