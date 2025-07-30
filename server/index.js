@@ -9,10 +9,12 @@ import mediaRoute from "./routes/media.route.js";
 import purchaseRoute from "./routes/purchaseCourse.route.js";
 import courseProgressRoute from "./routes/courseProgress.route.js";
 import esewaRoute from "./routes/esewa.route.js"
+import aiRoutes from "./routes/ai.route.js";
 import passport from "passport";
 import session from 'express-session';
 import { configurePassport } from "./database/passport-config.js";
 import morgan from "morgan";
+import { generateGeminiResponse } from "./utils/geminiClient.js";
 
 dotenv.config({});
 
@@ -54,6 +56,8 @@ app.use("/api/v1/course", courseRoute);
 app.use("/api/v1/purchase", purchaseRoute);
 app.use("/api/v1/buy", esewaRoute);
 app.use("/api/v1/progress", courseProgressRoute);
+app.use("/api/ai", aiRoutes);
+
 
 app.listen(PORT, () => {
   console.log(`Server listen at port ${PORT}`);

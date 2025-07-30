@@ -34,12 +34,12 @@ const AddCourse = () => {
   };
 
   // for displaying toast
-  useEffect(()=>{
-    if(isSuccess){
-        toast.success(data?.message || "Course created.");
-        navigate("/admin/course");
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success(data?.message || "Course created.");
+      navigate("/admin/course");
     }
-  },[isSuccess, error])
+  }, [isSuccess, error]);
 
   return (
     <div className="flex-1 mx-10">
@@ -65,16 +65,22 @@ const AddCourse = () => {
         <div>
           <Label>Category</Label>
           <Select onValueChange={getSelectedCategory}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[220px]">
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>Category</SelectLabel>
-                <SelectItem value="Next JS">Next JS</SelectItem>
-                <SelectItem value="Data Science">Data Science</SelectItem>
+
+                <SelectItem value="HTML">HTML</SelectItem>
+                <SelectItem value="CSS">CSS</SelectItem>
+                <SelectItem value="JavaScript">JavaScript</SelectItem>
+                <SelectItem value="TypeScript">TypeScript</SelectItem>
                 <SelectItem value="Frontend Development">
                   Frontend Development
+                </SelectItem>
+                <SelectItem value="Backend Development">
+                  Backend Development
                 </SelectItem>
                 <SelectItem value="Fullstack Development">
                   Fullstack Development
@@ -82,11 +88,52 @@ const AddCourse = () => {
                 <SelectItem value="MERN Stack Development">
                   MERN Stack Development
                 </SelectItem>
-                <SelectItem value="Javascript">Javascript</SelectItem>
-                <SelectItem value="Python">Python</SelectItem>
-                <SelectItem value="Docker">Docker</SelectItem>
+                <SelectItem value="Next JS">Next JS</SelectItem>
+                <SelectItem value="React JS">React JS</SelectItem>
+                <SelectItem value="Vue JS">Vue JS</SelectItem>
+                <SelectItem value="Node JS">Node JS</SelectItem>
+                <SelectItem value="Express JS">Express JS</SelectItem>
                 <SelectItem value="MongoDB">MongoDB</SelectItem>
-                <SelectItem value="HTML">HTML</SelectItem>
+                <SelectItem value="SQL">SQL</SelectItem>
+                <SelectItem value="Python">Python</SelectItem>
+                <SelectItem value="Data Science">Data Science</SelectItem>
+                <SelectItem value="Machine Learning">
+                  Machine Learning
+                </SelectItem>
+                <SelectItem value="Artificial Intelligence">
+                  Artificial Intelligence
+                </SelectItem>
+                <SelectItem value="DevOps">DevOps</SelectItem>
+                <SelectItem value="Docker">Docker</SelectItem>
+                <SelectItem value="Git & GitHub">Git & GitHub</SelectItem>
+                <SelectItem value="UI/UX Design">UI/UX Design</SelectItem>
+                <SelectItem value="Figma">Figma</SelectItem>
+                <SelectItem value="Adobe XD">Adobe XD</SelectItem>
+                <SelectItem value="Photoshop">Photoshop</SelectItem>
+                <SelectItem value="Cybersecurity">Cybersecurity</SelectItem>
+                <SelectItem value="Cloud Computing">Cloud Computing</SelectItem>
+                <SelectItem value="AWS">AWS</SelectItem>
+                <SelectItem value="Firebase">Firebase</SelectItem>
+                <SelectItem value="Java">Java</SelectItem>
+                <SelectItem value="C++">C++</SelectItem>
+                <SelectItem value="C#">C#</SelectItem>
+                <SelectItem value="Android Development">
+                  Android Development
+                </SelectItem>
+                <SelectItem value="iOS Development">iOS Development</SelectItem>
+                <SelectItem value="Mobile App Development">
+                  Mobile App Development
+                </SelectItem>
+                <SelectItem value="Software Testing">
+                  Software Testing
+                </SelectItem>
+                <SelectItem value="System Design">System Design</SelectItem>
+                <SelectItem value="Operating Systems">
+                  Operating Systems
+                </SelectItem>
+                <SelectItem value="DSA (Data Structures & Algorithms)">
+                  DSA (Data Structures & Algorithms)
+                </SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>

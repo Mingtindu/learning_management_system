@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { CoursePurchase } from "../models/coursePurchase.model.js";
 import { Course } from "../models/course.model.js";
 import { getEsewaPaymentHash, verifyEsewaPayment } from "../utils/esewa.js";
+import { User } from "../models/user.model.js";
 
 export const initializePayment = async (req, res) => {
   try {
@@ -19,7 +20,7 @@ export const initializePayment = async (req, res) => {
       amount: course.coursePrice,
       status: "pending",
     });
-    await newPurchase.save(); // ✅ Save it before using 
+    await newPurchase.save(); // ✅ Save it before using
 
     // Generate eSewa payment hash
     const paymentInitiate = await getEsewaPaymentHash({
@@ -44,15 +45,11 @@ export const initializePayment = async (req, res) => {
 
 export const completePayment = async (req, res, next) => {
   const { data } = req.query;
-
   try {
     const paymentInfo = await verifyEsewaPayment(data);
     const createOrder = await CoursePurchase.findById(
       paymentInfo.decodedData.transaction_uuid
     );
-
-    console.log("create order",createOrder)
-
     if (!createOrder) {
       return res.status(500).json({
         success: false,
@@ -66,10 +63,20 @@ export const completePayment = async (req, res, next) => {
         paymentId: paymentInfo.decodedData.transaction_code,
       }
     );
-
-    res.redirect(
-      `http://localhost:5173/payment-success?transactionId=${paymentInfo.decodedData.transaction_code}`
+    const coursePurchase = await CoursePurchase.findById(
+      paymentInfo.decodedData.transaction_uuid
     );
+    if (!coursePurchase) {
+      throw new Error("CoursePurchase not found");
+    }
+
+    await User.findByIdAndUpdate(coursePurchase.userId, {
+      $addToSet: {
+        enrolledCourses: coursePurchase.courseId,
+      },
+    });
+
+    res.redirect(`http://localhost:5173/my-learning`);
     // await sendMail({
     //   to: `lazyfox916@gmail.com`,
     //   subject: "Payment Completed",
@@ -146,7 +153,7 @@ export const fillEsewaForm = async (req, res, next) => {
           <input type="hidden" name="product_code" value="${process.env.ESEWA_PRODUCT_CODE}" />
           <input type="hidden" name="product_service_charge" value="0" />
           <input type="hidden" name="product_delivery_charge" value="0" />
-          <input type="hidden" name="success_url" value="http://localhost:4000/api/payments/complete-payment" />
+          <input type="hidden" name="success_url" value="http://localhost:8080/api/v1/buy/complete-payment" />
           <input type="hidden" name="failure_url" value="https://developer.esewa.com.np/failure" />
           <input type="hidden" name="signed_field_names" value="total_amount,transaction_uuid,product_code" />
           <input type="hidden" name="signature" value="${paymentHash.signature}" />

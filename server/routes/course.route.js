@@ -5,7 +5,7 @@ import upload from "../utils/multer.js";
 const router = express.Router();
 
 router.route("/").post(isAuthenticated,createCourse);
-router.get('/recommendations',isAuthenticated, getRecommendedCourses);
+router.get('/recommendations', getRecommendedCourses);
 router.route("/search").get(isAuthenticated, searchCourse);
 router.route("/published-courses").get( getPublishedCourse);
 router.route("/").get(isAuthenticated,getCreatorCourses);

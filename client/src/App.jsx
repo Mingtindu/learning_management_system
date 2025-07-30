@@ -25,6 +25,12 @@ import PurchaseCourseProtectedRoute from "./components/PurchaseCourseProtectedRo
 import { ThemeProvider } from "./components/ThemeProvider";
 import GoogleSuccess from "./pages/GoogleSuccess";
 import RecommendedCourse from "./pages/student/RecommendedCourse";
+import AIAssistant from "./components/AIAssistant";
+import LmsShowcase from "./components/LmsShowcase";
+import HowItWorks from "./components/HowItWorks";
+import Signup from "./pages/Signup";
+import BlogPage from "./components/BlogPage";
+import ForumPage from "./components/ForumPage";
 
 const appRouter = createBrowserRouter([
   {
@@ -37,7 +43,40 @@ const appRouter = createBrowserRouter([
           <>
             <HeroSection />
             <Courses />
-            <RecommendedCourse/>
+            <RecommendedCourse />
+            <LmsShowcase />
+          </>
+        ),
+      },
+      {
+        path: "/ai-assistant",
+        element: (
+          <>
+            <AIAssistant />
+          </>
+        ),
+      },
+      {
+        path: "/blog",
+        element: (
+          <>
+            <BlogPage />
+          </>
+        ),
+      },
+       {
+        path: "/community",
+        element: (
+          <>
+            <ForumPage />
+          </>
+        ),
+      },
+      {
+        path: "/how-it-works",
+        element: (
+          <>
+            <HowItWorks />
           </>
         ),
       },
@@ -46,6 +85,14 @@ const appRouter = createBrowserRouter([
         element: (
           <AuthenticatedUser>
             <Login />
+          </AuthenticatedUser>
+        ),
+      },
+      {
+        path: "register",
+        element: (
+          <AuthenticatedUser>
+            <Signup />
           </AuthenticatedUser>
         ),
       },
@@ -59,9 +106,7 @@ const appRouter = createBrowserRouter([
       },
       {
         path: "auth/google/success",
-        element: (
-            <GoogleSuccess />
-        ),
+        element: <GoogleSuccess />,
       },
       {
         path: "profile",
