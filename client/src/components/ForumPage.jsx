@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MessageSquare, Plus, Clock, User, ChevronDown, Reply, Check } from 'lucide-react';
+import { Search, MessageSquare, Plus, Clock, User, ChevronDown, Reply, Check, Loader2, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,143 +21,189 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from './ui/label';
-
-// Mock data - replace with your actual data fetching logic
-const discussions = [
-  {
-    id: '1',
-    slug: 'react-hooks-best-practices',
-    title: 'React Hooks Best Practices?',
-    author: 'Alex Johnson',
-    authorAvatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-    course: 'Advanced React',
-    category: 'Programming',
-    tags: ['react', 'hooks', 'frontend'],
-    replies: 12,
-    views: 145,
-    lastActivity: '2023-11-15T14:30:00Z',
-    isAnswered: true,
-    isInstructorReply: true
-  },
-  {
-    id: '2',
-    slug: 'css-grid-layout-help',
-    title: 'Need help with CSS Grid layout',
-    author: 'Maria Garcia',
-    authorAvatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-    course: 'CSS Mastery',
-    category: 'Web Design',
-    tags: ['css', 'layout', 'responsive'],
-    replies: 5,
-    views: 89,
-    lastActivity: '2023-11-14T09:15:00Z',
-    isAnswered: false,
-    isInstructorReply: false
-  },
-  {
-    id: '3',
-    slug: 'python-data-analysis',
-    title: 'Python for Data Analysis - Resources?',
-    author: 'Sam Wilson',
-    authorAvatar: 'https://randomuser.me/api/portraits/men/75.jpg',
-    course: 'Data Science',
-    category: 'Programming',
-    tags: ['python', 'pandas', 'data-science'],
-    replies: 8,
-    views: 112,
-    lastActivity: '2023-11-13T16:45:00Z',
-    isAnswered: true,
-    isInstructorReply: false
-  },
-  {
-    id: '4',
-    slug: 'javascript-closure-question',
-    title: 'Understanding JavaScript Closures',
-    author: 'Priya Patel',
-    authorAvatar: 'https://randomuser.me/api/portraits/women/68.jpg',
-    course: 'JavaScript Fundamentals',
-    category: 'Programming',
-    tags: ['javascript', 'closures', 'functions'],
-    replies: 3,
-    views: 67,
-    lastActivity: '2023-11-12T11:20:00Z',
-    isAnswered: false,
-    isInstructorReply: false
-  },
-  {
-    id: '5',
-    slug: 'career-advice-web-dev',
-    title: 'Career Advice for Web Developers',
-    author: 'Michael Chen',
-    authorAvatar: 'https://randomuser.me/api/portraits/men/22.jpg',
-    course: 'Career Development',
-    category: 'Career',
-    tags: ['career', 'web-development', 'jobs'],
-    replies: 15,
-    views: 203,
-    lastActivity: '2023-11-10T18:10:00Z',
-    isAnswered: true,
-    isInstructorReply: true
-  },
-];
-
-const categories = ['All', 'Programming', 'Web Design', 'Career', 'General'];
-const courses = ['All', 'Advanced React', 'CSS Mastery', 'Data Science', 'JavaScript Fundamentals', 'Career Development'];
-const sortOptions = ['Most Recent', 'Most Replies', 'Unanswered'];
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import axios from 'axios';
+import { BASE_URL } from '@/app/constant';
 
 const ForumPage = () => {
+  // State management
+  const [discussions, setDiscussions] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [allTags, setAllTags] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [creating, setCreating] = useState(false);
+
+  // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCourse, setSelectedCourse] = useState('All');
   const [selectedSort, setSelectedSort] = useState('Most Recent');
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({});
+
+  // New post states
   const [newPostOpen, setNewPostOpen] = useState(false);
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
-  const [selectedTags, setSelectedTags] = useState([]);
+  const [newPostCourse, setNewPostCourse] = useState('');
+  const [newPostCategory, setNewPostCategory] = useState('');
+  const [newPostTags, setNewPostTags] = useState('');
 
-  // Filter and sort discussions
-  const filteredDiscussions = discussions
-    .filter(discussion => {
-      const matchesSearch = discussion.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          discussion.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesCategory = selectedCategory === 'All' || discussion.category === selectedCategory;
-      const matchesCourse = selectedCourse === 'All' || discussion.course === selectedCourse;
-      const matchesTags = selectedTags.length === 0 || 
-                         selectedTags.some(tag => discussion.tags.includes(tag));
-      const matchesUnanswered = selectedSort !== 'Unanswered' || !discussion.isAnswered;
-      
-      return matchesSearch && matchesCategory && matchesCourse && matchesTags && matchesUnanswered;
-    })
-    .sort((a, b) => {
-      if (selectedSort === 'Most Replies') {
-        return b.replies - a.replies;
-      } else if (selectedSort === 'Unanswered') {
-        return a.isAnswered ? 1 : -1;
+  // API Headers with auth token
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  console.log("courses", courses);
+
+  // Fetch initial data
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [categoriesRes, tagsRes, coursesRes] = await Promise.all([
+          axios.get(`${BASE_URL}/api/v1/forum/categories`),
+          axios.get(`${BASE_URL}/api/v1/forum/tags`),
+          axios.get(`${BASE_URL}/api/v1/course/published-courses`)
+        ]);
+        console.log("coursesRes", coursesRes);
+
+        setCategories(['All', ...categoriesRes.data]);
+        setAllTags(tagsRes.data);
+        setCourses([
+          'All',
+          ...coursesRes.data.courses.map(course => course.courseTitle)
+        ]);
+      } catch (err) {
+        console.error('Error fetching initial data:', err);
+        // Set default values if API calls fail
+        setCategories(['All', 'Programming', 'Web Design', 'Career', 'General']);
+        setAllTags([]);
+        setCourses(['All']);
       }
-      // Default: Most Recent
-      return new Date(b.lastActivity) - new Date(a.lastActivity);
-    });
+    };
 
-  const allTags = Array.from(new Set(discussions.flatMap(d => d.tags)));
+    fetchInitialData();
+  }, []);
 
+  // Fetch discussions with filters
+  useEffect(() => {
+    const fetchDiscussions = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const params = new URLSearchParams({
+          page: currentPage,
+          limit: 10,
+        });
+
+        if (searchQuery) params.append('search', searchQuery);
+        if (selectedCategory !== 'All') params.append('category', selectedCategory);
+        if (selectedCourse !== 'All') params.append('course', selectedCourse);
+        if (selectedTags.length > 0) selectedTags.forEach(tag => params.append('tags', tag));
+        
+        // Map sort options to API values
+        const sortMap = {
+          'Most Recent': 'recent',
+          'Most Replies': 'replies',
+          'Unanswered': 'recent'
+        };
+        params.append('sort', sortMap[selectedSort]);
+        
+        if (selectedSort === 'Unanswered') {
+          params.append('unanswered', 'true');
+        }
+
+        const response = await axios.get(`${BASE_URL}/api/v1/forum/discussions?${params}`);
+        
+        setDiscussions(response.data.discussions);
+        setPagination(response.data.pagination);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Failed to fetch discussions');
+        console.error('Error fetching discussions:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDiscussions();
+  }, [searchQuery, selectedCategory, selectedCourse, selectedSort, selectedTags, currentPage]);
+
+  // Handle new post submission
+  const handleNewPostSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      setCreating(true);
+      setError(null);
+
+      // Find course ID from course title
+      const courseRes = await axios.get(`${BASE_URL}/api/v1/course/published-courses`);
+      const selectedCourseObj = courseRes.data.courses.find(course => course.courseTitle === newPostCourse);
+      
+      if (!selectedCourseObj) {
+        setError('Please select a valid course');
+        return;
+      }
+
+      const postData = {
+        title: newPostTitle,
+        content: newPostContent,
+        course: selectedCourseObj._id,
+        category: newPostCategory,
+        tags: newPostTags.split(',').map(tag => tag.trim()).filter(tag => tag)
+      };
+
+      const response = await axios.post(
+        `${BASE_URL}/api/v1/forum/discussions`,
+        postData,
+        { headers: getAuthHeaders() }
+      );
+
+      // Add new discussion to the beginning of the list
+      setDiscussions(prev => [response.data, ...prev]);
+      
+      // Reset form and close dialog
+      setNewPostOpen(false);
+      setNewPostTitle('');
+      setNewPostContent('');
+      setNewPostCourse('');
+      setNewPostCategory('');
+      setNewPostTags('');
+      
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to create discussion');
+      console.error('Error creating discussion:', err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // Toggle tag selection
   const toggleTag = (tag) => {
     setSelectedTags(prev => 
       prev.includes(tag) 
         ? prev.filter(t => t !== tag) 
         : [...prev, tag]
     );
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
-  const handleNewPostSubmit = (e) => {
-    e.preventDefault();
-    // Here you would typically call an API to create the new post
-    console.log('New post:', { title: newPostTitle, content: newPostContent });
-    setNewPostOpen(false);
-    setNewPostTitle('');
-    setNewPostContent('');
-    // Add optimistic update or refetch discussions
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('All');
+    setSelectedCourse('All');
+    setSelectedSort('Most Recent');
+    setSelectedTags([]);
+    setCurrentPage(1);
   };
 
+  // Format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -167,6 +213,12 @@ const ForumPage = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Handle pagination
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo(0, 0);
   };
 
   return (
@@ -199,6 +251,52 @@ const ForumPage = () => {
                       required
                     />
                   </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="course">Course</Label>
+                      <Select value={newPostCourse} onValueChange={setNewPostCourse} required>
+                        <SelectTrigger className="w-full mt-1">
+                          <SelectValue placeholder="Select course" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {courses.filter(course => course !== 'All').map(course => (
+                            <SelectItem key={course} value={course}>
+                              {course}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="category">Category</Label>
+                      <Select value={newPostCategory} onValueChange={setNewPostCategory} required>
+                        <SelectTrigger className="w-full mt-1">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.filter(cat => cat !== 'All').map(category => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="tags">Tags (comma separated)</Label>
+                    <Input
+                      id="tags"
+                      value={newPostTags}
+                      onChange={(e) => setNewPostTags(e.target.value)}
+                      placeholder="react, javascript, frontend"
+                      className="mt-1"
+                    />
+                  </div>
+
                   <div>
                     <Label htmlFor="content">Details</Label>
                     <Textarea
@@ -210,15 +308,27 @@ const ForumPage = () => {
                       required
                     />
                   </div>
+
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="flex justify-end gap-2">
                     <Button 
                       variant="outline" 
                       type="button" 
                       onClick={() => setNewPostOpen(false)}
+                      disabled={creating}
                     >
                       Cancel
                     </Button>
-                    <Button type="submit">Post Discussion</Button>
+                    <Button type="submit" disabled={creating}>
+                      {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Post Discussion
+                    </Button>
                   </div>
                 </form>
               </DialogContent>
@@ -238,14 +348,20 @@ const ForumPage = () => {
               placeholder="Search discussions..."
               className="pl-10"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <Label htmlFor="category">Category</Label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select value={selectedCategory} onValueChange={(value) => {
+                setSelectedCategory(value);
+                setCurrentPage(1);
+              }}>
                 <SelectTrigger className="w-full mt-1">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -261,7 +377,10 @@ const ForumPage = () => {
 
             <div>
               <Label htmlFor="course">Course</Label>
-              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+              <Select value={selectedCourse} onValueChange={(value) => {
+                setSelectedCourse(value);
+                setCurrentPage(1);
+              }}>
                 <SelectTrigger className="w-full mt-1">
                   <SelectValue placeholder="Select course" />
                 </SelectTrigger>
@@ -277,16 +396,17 @@ const ForumPage = () => {
 
             <div>
               <Label htmlFor="sort">Sort By</Label>
-              <Select value={selectedSort} onValueChange={setSelectedSort}>
+              <Select value={selectedSort} onValueChange={(value) => {
+                setSelectedSort(value);
+                setCurrentPage(1);
+              }}>
                 <SelectTrigger className="w-full mt-1">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sortOptions.map(option => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="Most Recent">Most Recent</SelectItem>
+                  <SelectItem value="Most Replies">Most Replies</SelectItem>
+                  <SelectItem value="Unanswered">Unanswered</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -309,100 +429,164 @@ const ForumPage = () => {
           </div>
         </div>
 
+        {/* Error Alert */}
+        {error && !loading && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2 text-gray-600 dark:text-gray-400">Loading discussions...</span>
+          </div>
+        )}
+
         {/* Discussions List */}
-        <div className="space-y-4">
-          <AnimatePresence>
-            {filteredDiscussions.length > 0 ? (
-              filteredDiscussions.map(discussion => (
-                <motion.div
-                  key={discussion.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  whileHover={{ scale: 1.01 }}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
-                >
-                  <Link to={`/forum/${discussion.id}/${discussion.slug}`} className="block">
-                    <div className="p-4 sm:p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            {discussion.isAnswered && (
-                              <Badge variant="success" className="gap-1">
-                                <Check className="h-3 w-3" />
-                                Answered
-                              </Badge>
-                            )}
-                            {discussion.isInstructorReply && (
-                              <Badge variant="secondary">Instructor Reply</Badge>
-                            )}
-                            <Badge variant="outline">{discussion.category}</Badge>
+        {!loading && (
+          <div className="space-y-4">
+            <AnimatePresence>
+              {discussions.length > 0 ? (
+                discussions.map(discussion => (
+                  <motion.div
+                    key={discussion._id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    whileHover={{ scale: 1.01 }}
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+                  >
+                    <Link to={`/forum/${discussion._id}/${discussion.slug}`} className="block">
+                      <div className="p-4 sm:p-6">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              {discussion.isPinned && (
+                                <Badge variant="secondary">Pinned</Badge>
+                              )}
+                              {discussion.isAnswered && (
+                                <Badge variant="success" className="gap-1">
+                                  <Check className="h-3 w-3" />
+                                  Answered
+                                </Badge>
+                              )}
+                              {discussion.hasInstructorReply && (
+                                <Badge variant="secondary">Instructor Reply</Badge>
+                              )}
+                              <Badge variant="outline">{discussion.category}</Badge>
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+                              {discussion.title}
+                            </h3>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              {discussion.tags.map(tag => (
+                                <Badge 
+                                  key={tag} 
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                              <img 
+                                src={discussion.author?.photoUrl || `https://ui-avatars.com/api/?name=${discussion.author?.name}`} 
+                                alt={discussion.author?.name}
+                                className="h-6 w-6 rounded-full mr-2"
+                              />
+                              {discussion.author?.name} •{' '}
+                              {discussion.course?.courseTitle}
+                            </div>
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
-                            {discussion.title}
-                          </h3>
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {discussion.tags.map(tag => (
-                              <Badge 
-                                key={tag} 
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                            <img 
-                              src={discussion.authorAvatar} 
-                              alt={discussion.author}
-                              className="h-6 w-6 rounded-full mr-2"
-                            />
-                            {discussion.author} • {discussion.course}
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                            <MessageSquare className="h-4 w-4" />
-                            <span>{discussion.replies} replies</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                            <Clock className="h-4 w-4" />
-                            <span>{formatDate(discussion.lastActivity)}</span>
+                          <div className="flex flex-col items-end gap-2">
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                              <MessageSquare className="h-4 w-4" />
+                              <span>{discussion.repliesCount} replies</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                              <Clock className="h-4 w-4" />
+                              <span>{formatDate(discussion.lastActivity)}</span>
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              {discussion.views} views
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center"
+                >
+                  <MessageSquare className="h-10 w-10 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
+                    No discussions found
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Try adjusting your search or filters
+                  </p>
+                  <Button onClick={clearFilters}>
+                    Clear filters
+                  </Button>
                 </motion.div>
-              ))
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center"
-              >
-                <MessageSquare className="h-10 w-10 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
-                  No discussions found
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Try adjusting your search or filters
-                </p>
-                <Button onClick={() => {
-                  setSearchQuery('');
-                  setSelectedCategory('All');
-                  setSelectedCourse('All');
-                  setSelectedSort('Most Recent');
-                  setSelectedTags([]);
-                }}>
-                  Clear filters
+              )}
+            </AnimatePresence>
+
+            {/* Pagination */}
+            {pagination.pages > 1 && (
+              <div className="flex items-center justify-center space-x-2 mt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
                 </Button>
-              </motion.div>
+                
+                {Array.from({ length: pagination.pages }, (_, i) => i + 1)
+                  .filter(page => 
+                    page === 1 || 
+                    page === pagination.pages || 
+                    Math.abs(page - currentPage) <= 2
+                  )
+                  .map((page, index, arr) => {
+                    const prevPage = arr[index - 1];
+                    const showEllipsis = prevPage && page - prevPage > 1;
+                    
+                    return (
+                      <div key={page} className="flex items-center">
+                        {showEllipsis && <span className="px-2">...</span>}
+                        <Button
+                          variant={currentPage === page ? "default" : "outline"}
+                          onClick={() => handlePageChange(page)}
+                          className="w-10"
+                        >
+                          {page}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === pagination.pages}
+                >
+                  Next
+                </Button>
+              </div>
             )}
-          </AnimatePresence>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

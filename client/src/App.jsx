@@ -31,6 +31,7 @@ import HowItWorks from "./components/HowItWorks";
 import Signup from "./pages/Signup";
 import BlogPage from "./components/BlogPage";
 import ForumPage from "./components/ForumPage";
+import DiscussionPage from "./components/DiscussionPage";
 
 const appRouter = createBrowserRouter([
   {
@@ -49,6 +50,11 @@ const appRouter = createBrowserRouter([
         ),
       },
       {
+        path: "/forum/:id/:slug",
+        element: <DiscussionPage />,
+      },
+
+      {
         path: "/ai-assistant",
         element: (
           <>
@@ -64,7 +70,7 @@ const appRouter = createBrowserRouter([
           </>
         ),
       },
-       {
+      {
         path: "/community",
         element: (
           <>

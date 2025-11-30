@@ -16,12 +16,14 @@ import React from "react";
 import ReactPlayer from "react-player";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
+import QuizTab from "@/components/QuizTab";
 
 const CourseDetail = () => {
   const params = useParams();
   const courseId = params.courseId;
   const navigate = useNavigate();
-  const { data, isLoading, isError } = useGetCourseDetailWithStatusQuery(courseId);
+  const { data, isLoading, isError } =
+    useGetCourseDetailWithStatusQuery(courseId);
 
   if (isLoading) return <CourseDetailSkeleton />;
   if (isError) return <ErrorLoadingCourse />;
@@ -60,7 +62,10 @@ const CourseDetail = () => {
               <BadgeInfo size={16} aria-hidden="true" />
               <span>
                 Last updated{" "}
-                {format(new Date(course.updatedAt || course.createdAt), "MMMM d, yyyy")}
+                {format(
+                  new Date(course.updatedAt || course.createdAt),
+                  "MMMM d, yyyy"
+                )}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -70,7 +75,8 @@ const CourseDetail = () => {
             <div className="flex items-center gap-2">
               <UsersIcon size={16} aria-hidden="true" />
               <span>
-                {enrolledCount.toLocaleString()} student{enrolledCount !== 1 ? "s" : ""} enrolled
+                {enrolledCount.toLocaleString()} student
+                {enrolledCount !== 1 ? "s" : ""} enrolled
               </span>
             </div>
           </div>
@@ -93,14 +99,16 @@ const CourseDetail = () => {
             <CardHeader>
               <CardTitle>Course Content</CardTitle>
               <CardDescription>
-                {course.lectures.length} lecture{course.lectures.length !== 1 ? "s" : ""}
-                {course.totalDuration && ` • ${formatDuration(course.totalDuration)}`}
+                {course.lectures.length} lecture
+                {course.lectures.length !== 1 ? "s" : ""}
+                {course.totalDuration &&
+                  ` • ${formatDuration(course.totalDuration)}`}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {course.lectures.map((lecture, idx) => (
-                <div 
-                  key={lecture._id || idx} 
+                <div
+                  key={lecture._id || idx}
                   className="flex items-start gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
                 >
                   <span className="mt-0.5">
@@ -123,6 +131,19 @@ const CourseDetail = () => {
                 </div>
               ))}
             </CardContent>
+            {purchased && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Test Your Knowledge</CardTitle>
+                  <CardDescription>
+                    Interactive quizzes to reinforce your learning
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <QuizTab courseId={courseId} lectures={course.lectures} />
+                </CardContent>
+              </Card>
+            )}
           </Card>
         </div>
 
@@ -181,16 +202,16 @@ const CourseDetail = () => {
             </CardContent>
             <CardFooter className="p-4">
               {purchased ? (
-                <Button 
-                  onClick={handleContinueCourse} 
+                <Button
+                  onClick={handleContinueCourse}
                   className="w-full"
                   aria-label="Continue course"
                 >
                   Continue Course
                 </Button>
               ) : (
-                <BuyCourseButton 
-                  courseId={courseId} 
+                <BuyCourseButton
+                  courseId={courseId}
                   price={course.coursePrice}
                   className="w-full"
                 />
@@ -207,7 +228,7 @@ const CourseDetail = () => {
 const formatDuration = (seconds) => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  
+
   return `${hours > 0 ? `${hours}h ` : ""}${minutes}m`;
 };
 
@@ -278,8 +299,8 @@ const ErrorLoadingCourse = () => (
       <p className="text-red-600 dark:text-red-400 mb-4">
         Please try refreshing the page or check your internet connection
       </p>
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         onClick={() => window.location.reload()}
         className="text-red-700 dark:text-red-300"
       >

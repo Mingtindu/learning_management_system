@@ -109,15 +109,15 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <Mail className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                <span>support@elearning.com</span>
+                <span>support@mingtindu.com.np</span>
               </li>
               <li className="flex items-start gap-3">
                 <Phone className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                <span>+1 (555) 123-4567</span>
+                <span>+977 9848922387</span>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                <span>123 Education St, Learning City, 10101</span>
+                <span>Jorpati, Kathmandu</span>
               </li>
               <li className="flex items-start gap-3">
                 <Clock className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
