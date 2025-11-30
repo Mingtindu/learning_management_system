@@ -1,5 +1,6 @@
 import express from "express";
 import { generateGeminiResponse } from "../utils/geminiClient.js";
+import { generateQuizFromLecture } from "../controllers/gemini.controller.js";
 
 const router = express.Router();
 
@@ -18,5 +19,7 @@ router.post("/ask", async (req, res) => {
     res.status(500).json({ error: "AI response failed" });
   }
 });
+
+router.post("/generate-quiz",generateQuizFromLecture);
 
 export default router;

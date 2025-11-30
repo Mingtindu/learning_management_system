@@ -6,6 +6,7 @@ import {
   deleteVideoFromCloudinary,
   uploadMedia,
 } from "../utils/cloudinary.js";
+import jwt from "jsonwebtoken";
 
 export const createCourse = async (req, res) => {
   try {
@@ -356,86 +357,91 @@ export const togglePublishCourse = async (req, res) => {
     });
   }
 };
-
 export const getRecommendedCourses = async (req, res) => {
   try {
     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
-    let userId = null;
 
-    if (token) {
-      try {
-        const decode = jwt.verify(token, process.env.SECRET_KEY);
-        userId = decode?.userId;
-      } catch (err) {
-        console.warn("Invalid or expired token. Proceeding as guest.");
-      }
+    if (!token) {
+      const popularCourses = await Course.find({ isPublished: true })
+        .sort({ enrolledStudents: -1 })
+        .limit(5);
+
+      return res.json({
+        message: "Welcome! Here are some popular courses for you.",
+        recommendedCourses: popularCourses,
+      });
     }
-    if (userId) {
-      const user = await User.findById(userId).populate("enrolledCourses");
 
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+    const decode = await jwt.verify(token, process.env.SECRET_KEY);
+    const userId = decode.userId;
 
-      const enrolledCourses = user.enrolledCourses;
+    // Fetch user with enrolled courses
+    const user = await User.findById(userId).populate("enrolledCourses");
 
-      if (enrolledCourses.length === 0) {
-        const popularCourses = await Course.find({ isPublished: true })
-          .sort({ enrolledStudents: -1 })
-          .limit(5);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-        return res.json({
-          message:
-            "You haven't enrolled in any courses yet. Here are some popular ones.",
-          recommendedCourses: popularCourses,
-        });
-      }
+    const enrolledCourses = user.enrolledCourses;
 
-      const categories = [...new Set(enrolledCourses.map((c) => c.category))];
+    // If user has not enrolled in any course
+    if (enrolledCourses.length === 0) {
+      const popularCourses = await Course.find({ isPublished: true })
+        .sort({ enrolledStudents: -1 })
+        .limit(5);
 
-      const enrolledCourseIds = enrolledCourses.map((course) =>
-        course._id.toString()
-      );
+      return res.json({
+        message:
+          "You haven't enrolled in any courses yet. Here are some popular ones.",
+        recommendedCourses: popularCourses,
+      });
+    }
 
-      let recommendedCourses = await Course.find({
+    // Personalized recommendations
+    const categories = [...new Set(enrolledCourses.map((c) => c.category))];
+    const enrolledCourseIds = enrolledCourses.map((course) =>
+      course._id.toString()
+    );
+
+    let recommendedCourses = await Course.find({
+      isPublished: true,
+      category: { $in: categories },
+      _id: { $nin: enrolledCourseIds },
+    })
+      .sort({ enrolledStudents: -1 })
+      .limit(5);
+
+    if (recommendedCourses.length === 0) {
+      recommendedCourses = await Course.find({
         isPublished: true,
-        category: { $in: categories },
         _id: { $nin: enrolledCourseIds },
       })
         .sort({ enrolledStudents: -1 })
         .limit(5);
 
-      if (recommendedCourses.length === 0) {
-        recommendedCourses = await Course.find({
-          isPublished: true,
-          _id: { $nin: enrolledCourseIds },
-        })
-          .sort({ enrolledStudents: -1 })
-          .limit(5);
-
-        return res.json({
-          message:
-            "No similar category courses found. Here are some other popular ones.",
-          recommendedCourses,
-        });
-      }
-
       return res.json({
-        message: "Recommended based on your interests",
+        message:
+          "No similar category courses found. Here are some other popular ones.",
         recommendedCourses,
       });
     }
 
-    const popularCourses = await Course.find({ isPublished: true })
-      .sort({ enrolledStudents: -1 })
-      .limit(5);
-
     return res.json({
-      message: "Here are some popular courses you may like.",
-      recommendedCourses: popularCourses,
+      message: "Recommended based on your interests",
+      recommendedCourses,
     });
   } catch (error) {
     console.error("Recommendation error:", error);
-    res.status(500).json({ message: "Server error" });
+
+    // If token exists but invalid, still fallback to popular courses
+    const fallbackCourses = await Course.find({ isPublished: true })
+      .sort({ enrolledStudents: -1 })
+      .limit(5);
+
+    return res.status(200).json({
+      message:
+        "Unable to fetch personalized recommendations. Showing popular courses instead.",
+      recommendedCourses: fallbackCourses,
+    });
   }
 };

@@ -10,6 +10,8 @@ import purchaseRoute from "./routes/purchaseCourse.route.js";
 import courseProgressRoute from "./routes/courseProgress.route.js";
 import esewaRoute from "./routes/esewa.route.js"
 import aiRoutes from "./routes/ai.route.js";
+import forumRoute from "./routes/forum.route.js";
+
 import passport from "passport";
 import session from 'express-session';
 import { configurePassport } from "./database/passport-config.js";
@@ -57,6 +59,8 @@ app.use("/api/v1/purchase", purchaseRoute);
 app.use("/api/v1/buy", esewaRoute);
 app.use("/api/v1/progress", courseProgressRoute);
 app.use("/api/ai", aiRoutes);
+app.use("/api/v1/forum", forumRoute);
+
 
 
 app.listen(PORT, () => {
